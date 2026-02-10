@@ -1,13 +1,13 @@
-# BIOS-Manager-Pro
-Narzędzie SecOps oparte na Flask i Pandas do automatycznej analizy zgodności wersji BIOS w infrastrukturze IT. Oferuje import danych z CSV/XLSX, ocenę ryzyka, wizualizację statystyk (Heatmap) oraz panel administracyjny z obsługą bazy JSON/SQL.
 
 # 🛡️ BIOS Manager Pro
 
 **Zaawansowany Dashboard SecOps do analizy i monitorowania wersji BIOS w środowisku korporacyjnym.**
 
+Narzędzie SecOps oparte na Flask i Pandas do automatycznej analizy zgodności wersji BIOS w infrastrukturze IT. Oferuje import danych z CSV/XLSX, ocenę ryzyka, wizualizację statystyk (Heatmap) oraz panel administracyjny z obsługą bazy JSON/SQL.
+
 Aplikacja rozwiązuje problem ręcznego weryfikowania wersji oprogramowania układowego (BIOS/UEFI) na setkach komputerów. Pozwala na wgranie raportu z inwentaryzacji (Excel/CSV), automatycznie porównuje wersje z wewnętrzną bazą wiedzy i generuje raport bezpieczeństwa z oceną ryzyka.
 
-![BIOS Manager Screenshot]
+Baza wzorców (bios_versions.json) aktualna na dzień 10.02.2026. Najwięcej wzorców dotyczy urządzeń marki Dell.
 
 
 ## 🚀 Główne Funkcjonalności
@@ -16,6 +16,8 @@ Aplikacja rozwiązuje problem ręcznego weryfikowania wersji oprogramowania ukł
 * **Import Danych:** Obsługa plików `.xlsx` oraz `.csv` (np. z SCCM, Lansweeper, OCS Inventory).
 * **Inteligentne Parsowanie:** Algorytmy Regex (`packaging.version`) radzące sobie z różnymi formatami wersji (np. "1.20", "A14", "Ver 1.0 (A03)").
 * **Risk Score:** Automatyczne obliczanie poziomu zagrożenia organizacji (od "Bunkier" do "Krytyczny").
+
+![Dashboard aplikacji](screenshots/biosmanager1.png)
 
 ### 2. Wizualizacja Danych (Cyberpunk UI)
 * **Heatmapa Oddziałów:** Wizualna reprezentacja zgodności w poszczególnych lokalizacjach firmy.
@@ -27,6 +29,8 @@ Aplikacja rozwiązuje problem ręcznego weryfikowania wersji oprogramowania ukł
 * **Baza Wiedzy:** Zarządzanie wzorcami wersji BIOS (SQLAlchemy + SQLite).
 * **Import/Eksport:** Możliwość szybkiego zasilenia bazy plikiem JSON (`import_json_db`).
 * **Edycja:** Oznaczanie modeli jako "OLD" (brak wsparcia producenta).
+* 
+![Dashboard aplikacji](screenshots/biosmanager2.png)
 
 ## 🛠️ Technologie
 
@@ -43,8 +47,8 @@ Aplikacja rozwiązuje problem ręcznego weryfikowania wersji oprogramowania ukł
    git clone [https://github.com/phatterit/bios-manager-pro.git](https://github.com/phatterit/bios-manager-pro.git)
    cd bios-manager-pro
 
-    Utwórz i aktywuj wirtualne środowisko:
-    Bash
+Utwórz i aktywuj wirtualne środowisko:
+ 
 
     python -m venv venv
 
@@ -54,17 +58,17 @@ Aplikacja rozwiązuje problem ręcznego weryfikowania wersji oprogramowania ukł
     # Linux/Mac:
     source venv/bin/activate
 
-    Zainstaluj zależności:
-    Bash
+Zainstaluj zależności:
+  
 
     pip install -r requirements.txt
 
-    Uruchom aplikację:
-    Bash
+Uruchom aplikację:
+ 
 
     python app.py
 
-    Aplikacja otworzy się automatycznie w przeglądarce pod adresem http://127.0.0.1:5000.
+Aplikacja otworzy się automatycznie w przeglądarce pod adresem http://127.0.0.1:5000.
 
 ### 📂 Struktura Projektu
 

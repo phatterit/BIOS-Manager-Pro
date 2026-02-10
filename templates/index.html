@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="pl" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIOS // MANAGER PRO</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-end mb-4 border-bottom border-secondary pb-3">
+            <div>
+                <small class="text-muted font-mono">SEC_OPS // SYSTEM READY</small>
+                <h1 class="display-5 fw-bold mb-0 text-white">BIOS <span style="color: var(--neon-cyan)">MANAGER</span></h1>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-dark border border-secondary p-2 font-mono">
+                    BAZA MODELI: <span class="text-warning">{{ db_count }}</span>
+                </span>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'dark' if category == 'danger' else 'info' }} border-{{ category }} d-flex align-items-center mb-3 text-white">
+                <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <ul class="nav nav-tabs mb-4" id="mainTabs">
+            <li class="nav-item">
+                <button class="nav-link {{ 'active' if active_tab == 'scanner' else '' }}" id="scanner-tab" data-bs-toggle="tab" data-bs-target="#scanner" type="button">
+                    <i class="bi bi-search"></i> SKANER
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button">
+                    <i class="bi bi-pie-chart"></i> STATYSTYKI
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link {{ 'active' if active_tab == 'admin' else '' }}" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" type="button">
+                    <i class="bi bi-database-gear"></i> ADMIN
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <div class="tab-pane fade {{ 'show active' if active_tab == 'scanner' else '' }}" id="scanner">
+                <div class="tech-card p-4 rounded-3 mb-4">
+                    <form method="POST" enctype="multipart/form-data" class="d-flex gap-3 align-items-center">
+                        <div class="flex-grow-1">
+                            <input class="form-control font-mono" type="file" name="file" accept=".csv, .xlsx" required>
+                        </div>
+                        <button type="submit" class="btn btn-cyber fw-bold px-5">ANALIZUJ PLIK</button>
+                    </form>
+                </div>
+
+                {% if report %}
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <h5 class="text-white mb-0 font-mono">DASHBOARD BEZPIECZEŃSTWA</h5>
+                    <span class="badge bg-dark border border-info text-info font-mono">
+                        <i class="bi bi-calendar-check me-1"></i> Data: {{ report.stats.analysis_date }}
+                    </span>
+                </div>
+
+                <div class="row mb-4 g-3 font-mono">
+                    <div class="col-6 col-lg-2">
+                        <div class="p-3 rounded border border-secondary bg-dark h-100 text-center d-flex flex-column justify-content-center">
+                            <small class="text-muted d-block">HOSTY</small>
+                            <span class="fs-4 fw-bold text-white">{{ report.stats.total }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-2">
+                        <div class="p-3 rounded border border-success bg-dark h-100 text-center d-flex flex-column justify-content-center">
+                            <small class="text-success d-block">OK</small>
+                            <span class="fs-4 fw-bold text-success">{{ report.stats.ok + report.stats.newer }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-2">
+                        <div class="p-3 rounded border border-danger bg-dark h-100 text-center d-flex flex-column justify-content-center">
+                            <small class="text-danger d-block">UPDATE</small>
+                            <span class="fs-4 fw-bold text-danger">{{ report.stats.outdated }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-2">
+                        <div class="p-3 rounded border border-warning bg-dark h-100 text-center d-flex flex-column justify-content-center">
+                            <small class="text-warning d-block">NIEZNANE</small>
+                            <span class="fs-4 fw-bold text-warning">{{ report.stats.unknown }}</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <div class="p-3 rounded border h-100 d-flex align-items-center justify-content-between px-4 risk-card-glow glow-{{ report.stats.risk_color }}">
+                            <div class="text-start">
+                                <small class="text-muted d-block">STATUS ZAGROŻENIA</small>
+                                <h4 class="fw-bold mb-0 {{ 'text-neon-green' if report.stats.risk_color == 'neon-green' else 'text-' + report.stats.risk_color }}">
+                                    {{ report.stats.risk_text }}
+                                </h4>
+                                <small class="text-secondary">Zagrożonych: {{ report.stats.outdated_pct }}%</small>
+                            </div>
+                            <div class="display-5 {{ 'text-neon-green' if report.stats.risk_color == 'neon-green' else 'text-' + report.stats.risk_color }}">
+                                <i class="bi {{ report.stats.risk_icon }}"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-card p-3 mb-3 sticky-top" style="z-index: 100; top: 10px; border-left-color: var(--neon-cyan);">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="filterBtn" id="btnAll" checked onclick="setFilter('all')">
+                            <label class="btn btn-outline-secondary btn-sm font-mono" for="btnAll">WSZYSTKIE</label>
+                            
+                            <input type="radio" class="btn-check" name="filterBtn" id="btnErr" onclick="setFilter('danger')">
+                            <label class="btn btn-outline-danger btn-sm font-mono" for="btnErr">TYLKO NIEAKTUALNE</label>
+                            
+                            <input type="radio" class="btn-check" name="filterBtn" id="btnWarn" onclick="setFilter('warning')">
+                            <label class="btn btn-outline-warning btn-sm font-mono" for="btnWarn">BRAK WZORCA</label>
+                            
+                            <input type="radio" class="btn-check" name="filterBtn" id="btnOk" onclick="setFilter('ok')">
+                            <label class="btn btn-outline-success btn-sm font-mono" for="btnOk">TYLKO AKTUALNE</label>
+                        </div>
+                        
+                        <div class="input-group input-group-sm" style="max-width: 300px;">
+                            <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                            <input type="text" id="textFilter" class="form-control bg-dark text-white border-secondary" placeholder="Szukaj hosta..." onkeyup="applyFilters()">
+                        </div>
+                        
+                        <div>
+                            <a href="{{ url_for('export_report') }}" class="btn btn-sm btn-cyber fw-bold text-white">
+                                <i class="bi bi-download"></i> CSV
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-card p-0 overflow-hidden rounded-3">
+                    <div class="table-responsive">
+                        <table class="table table-tech mb-0 align-middle table-hover">
+                            <colgroup>
+                                <col style="width: 18%;">
+                                <col style="width: 24%;">
+                                <col style="width: 14%;">
+                                <col style="width: 14%;">
+                                <col style="width: 14%;">
+                                <col style="width: 16%;">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Host</th>
+                                    <th>Model</th>
+                                    <th>Wzorzec</th>
+                                    <th>Wersja PC</th>
+                                    <th>Wymagana</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in report.rows %}
+                                <tr class="result-row" data-cat="{{ row.filter_cat }}">
+                                    <td class="ps-4 fw-bold text-white font-mono">{{ row.computer_name }}</td>
+                                    <td class="text-muted">{{ row.model }}</td>
+                                    <td class="small font-mono text-secondary">{{ row.match_model }}</td>
+                                    <td class="font-mono {{ 'text-danger fw-bold' if row.filter_cat == 'danger' else 'text-white' }}">
+                                        {{ row.current }}
+                                    </td>
+                                    <td class="font-mono text-secondary">{{ row.latest }}</td>
+                                    <td><span class="badge bg-{{ row.color }}">{{ row.status }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="tab-pane fade" id="stats">
+                {% if report %}
+                <div class="row g-4 font-mono">
+                    <div class="col-md-5">
+                        <div class="tech-card p-4 h-100 d-flex flex-column">
+                            <div class="mb-4 text-center">
+                                <h6 class="text-white border-bottom border-secondary pb-2 mb-3">OGÓLNA ZGODNOŚĆ</h6>
+                                <div style="width: 100%; height: 300px;">
+                                    <canvas id="riskChart" 
+                                            data-ok="{{ report.stats.ok + report.stats.newer }}" 
+                                            data-err="{{ report.stats.outdated }}" 
+                                            data-warn="{{ report.stats.unknown }}">
+                                    </canvas>
+                                </div>
+                            </div>
+                            
+                            <div class="flex-grow-1 border-top border-secondary pt-3">
+                                <h6 class="text-white mb-3 text-center">MATRIX ODDZIAŁÓW (HEATMAP)</h6>
+                                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                    {% for dept in report.stats.departments %}
+                                    <div class="dept-heatmap-box rounded text-center p-2 border border-{{ dept.bar_color }}" 
+                                         title="{{ dept.name }}: {{ dept.score }}% Zgodności">
+                                        <small class="text-secondary d-block" style="font-size: 0.7rem;">{{ dept.name }}</small>
+                                        <strong class="text-{{ dept.bar_color }} fs-5">{{ dept.score }}%</strong>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-7">
+                        <div class="tech-card p-0 h-100 overflow-hidden d-flex flex-column">
+                            <div class="p-3 bg-dark border-bottom border-secondary">
+                                <h5 class="text-white mb-0"><i class="bi bi-building me-2 text-info"></i>RANKING ODDZIAŁÓW</h5>
+                                <small class="text-muted">Według zgodności BIOS (%)</small>
+                            </div>
+                            <div class="table-responsive flex-grow-1">
+                                <table class="table table-dark table-hover mb-0 align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th class="ps-4">Oddział</th>
+                                            <th class="text-center">Zgodność</th>
+                                            <th class="text-end pe-4">Hosty (OK / Err)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for dept in report.stats.departments %}
+                                        <tr>
+                                            <td class="ps-4 fw-bold text-info">{{ dept.name }}</td>
+                                            <td class="w-50 px-3">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress flex-grow-1 me-3" style="height: 10px; background: #333;">
+                                                        <div class="progress-bar dynamic-bar bg-{{ dept.bar_color }}" role="progressbar" data-width="{{ dept.score }}"></div>
+                                                    </div>
+                                                    <span class="fw-bold text-{{ dept.bar_color }}">{{ dept.score }}%</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-end pe-4 text-muted small font-mono">
+                                                <span class="text-white">{{ dept.total }}</span> 
+                                                (<span class="text-success">{{ dept.ok }}</span> / <span class="text-danger">{{ dept.outdated }}</span>)
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-dark text-center py-5">
+                    <h4 class="text-white">Brak danych</h4>
+                    <p class="text-muted">Wgraj plik w zakładce SKANER.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="tab-pane fade {{ 'show active' if active_tab == 'admin' else '' }}" id="admin">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        
+                        <div class="tech-card p-3 mb-3">
+                            <h5 class="text-white mb-3 font-mono">DODAJ / ZAKTUALIZUJ</h5>
+                            <form action="{{ url_for('manual_add') }}" method="POST">
+                                <div class="mb-2">
+                                    <select name="vendor" class="form-select bg-dark text-white border-secondary">
+                                        <option value="Dell">Dell</option>
+                                        <option value="Lenovo">Lenovo</option>
+                                        <option value="HP">HP</option>
+                                        <option value="Inny">Inny</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <input type="text" name="model" class="form-control bg-dark text-white border-secondary" placeholder="Model" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" name="version" class="form-control bg-dark text-white border-secondary" placeholder="Wersja" required>
+                                </div>
+                                <button type="submit" class="btn btn-cyber w-100 fw-bold">ZAPISZ</button>
+                            </form>
+                    </div>
+                    
+                    <div class="tech-card p-3 mb-3" style="border-left-color: var(--neon-cyan);">
+                        <h5 class="text-white mb-3 font-mono"><i class="bi bi-filetype-json me-2"></i>IMPORT BAZY (JSON)</h5>
+                        <form action="{{ url_for('import_json_db') }}" method="POST" enctype="multipart/form-data">
+                            <div class="mb-2">
+                                <label class="text-muted small mb-1">Wybierz plik .json</label>
+                                <input type="file" name="json_file" accept=".json" class="form-control form-control-sm bg-dark text-white border-secondary" required>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-info w-100 font-mono fw-bold">WGRAJ BAZĘ</button>
+                        </form>
+                        <div class="mt-2 text-muted small" style="font-size: 0.75rem;">
+                            <i class="bi bi-info-circle me-1"></i> Format: <code>{"Model": "Wersja"}</code>
+                        </div>
+                    </div>
+                    <div class="tech-card p-3">
+                        <h6 class="text-white mb-3 font-mono">OSTATNIA AKTYWNOŚĆ</h6>
+                            <ul class="list-unstyled small font-mono mb-0">
+                                {% for recent in recent_updates %}
+                                <li class="mb-2 d-flex justify-content-between text-secondary border-bottom border-dark pb-1">
+                                    <span>{{ recent.model_name }}</span>
+                                    <span class="text-info">{{ recent.last_checked.strftime('%d-%m %H:%M') }}</span>
+                                </li>
+                                {% else %}
+                                <li class="text-muted">Brak zmian.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="tech-card p-0 overflow-hidden h-100 d-flex flex-column">
+                            <div class="p-2 border-bottom border-secondary bg-dark">
+                                <input type="text" id="dbSearch" class="form-control bg-dark text-white border-secondary" placeholder="Szukaj w bazie..." onkeyup="filterDb()">
+                            </div>
+                            <div class="table-responsive flex-grow-1" style="max-height: 600px; overflow-y: auto;">
+                                <table class="table table-dark table-hover mb-0 align-middle table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th class="ps-3">Producent</th>
+                                            <th>Model</th>
+                                            <th>Wersja</th>
+                                            <th class="text-end pe-3">Akcje</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dbTableBody">
+                                        {% for entry in db_entries %}
+                                        <tr>
+                                            <td class="ps-3 text-secondary">{{ entry.vendor }}</td>
+                                            <td class="fw-bold">{{ entry.model_name }}</td>
+                                            <td class="font-mono {{ 'text-orange' if entry.is_old else 'text-info' }}">
+                                                {{ entry.latest_version }}
+                                                {% if entry.is_old %}
+                                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.6rem;">OLD</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end pe-3">
+                                                <a href="https://www.google.com/search?q={{ entry.model_name }}+BIOS+driver+support" target="_blank" class="btn btn-sm btn-outline-info me-1">
+                                                    <i class="bi bi-globe"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-primary me-1" 
+                                                        onclick="openEditModal('{{ entry.id }}', '{{ entry.model_name }}', '{{ entry.latest_version }}', '{{ 1 if entry.is_old else 0 }}')">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <a href="{{ url_for('manual_delete', entry_id=entry.id) }}" 
+                                                   class="btn btn-sm btn-outline-danger" 
+                                                   onclick="return confirm('Usunąć?')">
+                                                   <i class="bi bi-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="button" class="btn" id="btn-back-to-top">
+        <i class="bi bi-arrow-up-short" style="font-size: 1.5rem;"></i>
+    </button>
+    
+    <footer class="app-footer">
+        <div class="container">
+            <p class="mb-0">BIOS MANAGER PRO &copy; {{ now_year }} <br>
+                <span class="text-muted small">Logic & Dev: <strong>hatterp & ai</strong></span>
+            </p>
+        </div>
+    </footer>
+
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content tech-card">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white">Edycja Wpisu</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('edit_entry') }}" method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="id" id="editId">
+                        
+                        <div class="mb-3">
+                            <label class="text-muted small">Model</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" id="editModel" disabled>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="text-muted small">Wersja BIOS</label>
+                            <input type="text" name="version" class="form-control bg-dark text-white border-secondary font-mono" id="editVersion" required>
+                        </div>
+                        
+                        <div class="form-check form-switch pt-2 border-top border-secondary mt-3">
+                            <input class="form-check-input" type="checkbox" name="is_old" id="editIsOld">
+                            <label class="form-check-label text-warning" for="editIsOld">
+                                <i class="bi bi-exclamation-triangle me-1"></i> OLD (Brak wsparcia)
+                            </label>
+                            <small class="d-block text-muted">Zaznacz, jeśli producent nie wydaje już aktualizacji.</small>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                        <button type="submit" class="btn btn-cyber">Zapisz</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Set widths for department progress bars
+            document.querySelectorAll('.dynamic-bar').forEach(bar => { 
+                const w = bar.getAttribute('data-width'); 
+                if(w) bar.style.width = w + '%'; 
+            });
+
+            // Init Risk Chart
+            const ctxRisk = document.getElementById('riskChart');
+            if (ctxRisk) {
+                const dataOk = parseInt(ctxRisk.dataset.ok || 0); 
+                const dataErr = parseInt(ctxRisk.dataset.err || 0); 
+                const dataWarn = parseInt(ctxRisk.dataset.warn || 0);
+                
+                new Chart(ctxRisk, {
+                    type: 'doughnut', 
+                    data: { 
+                        labels: ['Bezpieczne', 'Do Aktualizacji', 'Nieznane'], 
+                        datasets: [{ 
+                            data: [dataOk, dataErr, dataWarn], 
+                            backgroundColor: ['#2ecc71', '#ff2a6d', '#f1c40f'], 
+                            borderColor: '#1f2833', 
+                            borderWidth: 2 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { 
+                            legend: { 
+                                position: 'bottom', 
+                                labels: { color: '#c5c6c7', font: { family: "'Fira Code', monospace", size: 10 } } 
+                            } 
+                        } 
+                    }, 
+                    cutout: '60%' 
+                });
+            }
+
+            // Restore active tab if hash is present
+            if(window.location.hash === "#admin") {
+                new bootstrap.Tab(document.querySelector('#admin-tab')).show();
+            }
+        });
+
+        // Filtering logic
+        let currentFilter = 'all';
+        function setFilter(cat) { 
+            currentFilter = cat; 
+            applyFilters(); 
+        }
+        
+        function applyFilters() {
+            const searchVal = document.getElementById('textFilter') ? document.getElementById('textFilter').value.toLowerCase() : '';
+            if(!document.querySelectorAll('.result-row').length) return;
+            
+            document.querySelectorAll('.result-row').forEach(row => {
+                const cat = row.getAttribute('data-cat'); 
+                const text = row.innerText.toLowerCase();
+                
+                const matchesCat = (currentFilter === 'all' || cat === currentFilter);
+                const matchesSearch = text.includes(searchVal);
+                
+                row.style.display = (matchesCat && matchesSearch) ? '' : 'none';
+            });
+        }
+        
+        // Database search filter
+        function filterDb() {
+            const val = document.getElementById('dbSearch').value.toLowerCase();
+            document.querySelectorAll('#dbTableBody tr').forEach(r => {
+                r.style.display = r.innerText.toLowerCase().includes(val) ? '' : 'none';
+            });
+        }
+
+        // Modal Handler
+        function openEditModal(id, model, version, is_old) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editModel').value = model;
+            document.getElementById('editVersion').value = version;
+            document.getElementById('editIsOld').checked = (is_old == '1');
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+
+        // Back to top button logic
+        let mybutton = document.getElementById("btn-back-to-top");
+        if(mybutton) {
+            window.onscroll = function () { 
+                mybutton.style.display = (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) ? "block" : "none"; 
+            };
+            mybutton.addEventListener("click", function() { 
+                document.body.scrollTop = 0; 
+                document.documentElement.scrollTop = 0; 
+            });
+        }
+    </script>
+</body>
+</html>

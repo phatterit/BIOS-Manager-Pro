@@ -36,4 +36,52 @@ Aplikacja rozwiązuje problem ręcznego weryfikowania wersji oprogramowania ukł
 * **Frontend:** HTML5, Jinja2, Bootstrap 5, Chart.js
 * **Style:** Custom CSS (Neon/Dark Mode)
 
+## ⚙️ Instalacja i Uruchomienie
 
+1. **Sklonuj repozytorium:**
+   ```bash
+   git clone [https://github.com/phatterit/bios-manager-pro.git](https://github.com/phatterit/bios-manager-pro.git)
+   cd bios-manager-pro
+
+    Utwórz i aktywuj wirtualne środowisko:
+    Bash
+
+    python -m venv venv
+
+    # Windows:
+    venv\Scripts\activate
+
+    # Linux/Mac:
+    source venv/bin/activate
+
+    Zainstaluj zależności:
+    Bash
+
+    pip install -r requirements.txt
+
+    Uruchom aplikację:
+    Bash
+
+    python app.py
+
+    Aplikacja otworzy się automatycznie w przeglądarce pod adresem http://127.0.0.1:5000.
+
+### 📂 Struktura Projektu
+
+    app.py - Główny plik aplikacji, routing i widoki.
+
+    logic.py - Logika biznesowa, parsowanie plików, obliczanie statystyk.
+
+    models.py - Modele bazy danych (SQLAlchemy).
+
+    templates/ - Pliki HTML (Jinja2).
+
+    static/ - Pliki CSS i JS.
+
+    bios_versions.json - Plik pomocniczy do synchronizacji bazy wiedzy.
+
+### 📝 Autor
+
+Logic & Dev: hatterp & AI Support.
+
+Projekt stworzony w celach edukacyjnych, wzrostu bezpieczeństwa ogranizacji oraz usprawnienia procesów Security Operations.
